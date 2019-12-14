@@ -8,7 +8,7 @@ class Dict(object):
         if not os.path.exists(path): os.makedirs(path)
         self.path = path
         self.kv_path = os.path.join(self.path, "kv.ldb")
-        self.cedar_path = os.path.join(self.path, 'cedar')
+        self.cedar_path = os.path.join(self.path, 'cedar.dat')
         self.kv = lsm.LSM(self.kv_path)
         self.cedar = pycedar.dict()
         self.cedar.load(self.cedar_path)    
@@ -19,6 +19,8 @@ class Dict(object):
         self.replace(key, values)
     def __delitem__(self, key: str):
         self.delete(key)
+    def __len__(self):
+        return len(self.cedar)
 
 
     def get(self, key: str, default=None):
@@ -53,18 +55,49 @@ class Dict(object):
         self.kv[key] = pickle.dumps(values)
 
     def prefix_match(self, text: str):
-        pass
-    def multi_match(self, text: str):
-        pass
-    def multi_max_match(self, text: str):
-        pass
+        text = text.strip()
+        if text == "": return None
+        prefixs = self.cedar.trie.common_prefix_search(text)
+        if len(prefixs) == 0: return None
+        sets = {}
+        for v in prefixs:
+            word = v[0]
+            values = self.get(word)
+            for typ, val in values.items():
+                tv = "{}_{}".format(typ, val)
+                if tv not in sets or len(word) > len(sets[tv][0]):
+                    sets[tv] = (word, typ, val)
+        ret = {}
+        for _, v in sets.items():
+            if v[0] not in ret: ret[v[0]] = {v[1]: v[2]}
+            else: ret[v[0]][v[1]] = v[2]
+        return ret
 
+    def multi_match(self, text: str):
+        text = text.strip()
+        if text == "": return None
+        ret = {}
+        for i in range(len(text)):
+            hits = self.prefix_match(text[i:])
+            if hits is None: continue
+            for k, v in hits.items():
+                if k not in ret:
+                    ret[k] = {"value": v, "hits": []}
+                ret[k]["hits"].append({"start": i, "end": i+len(k)})
+        return ret
+
+    def multi_max_match(self, text: str):
+        raise NotImplementedError("To be implemented")
+
+    def save(self):
+        self.cedar.save(self.cedar_path)
 
 if __name__ == "__main__":
     d = Dict("data")
-    value = d.get("中国")
-    print(value)
-    d["中国"] = {"China": "中华人民共和国"}
+    d["中国"] = {"Country": "中华人民共和国"}
+    d["中国人民"] = {"People": "中华人民共和国合法公民"}
+    d.save()
     x = d['中国']
     print(x)
-    del d['中国']
+    ret = d.multi_match("中国人民是伟大的人民,中国近年来的发展有目共睹")
+    print(ret)
