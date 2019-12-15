@@ -34,6 +34,19 @@ class Dict(object):
         del self.kv[key]
         del self.cedar[key]
 
+    def insert(self, key: str, values: dict):
+        key = key.strip()
+        if key == "": raise KeyError("Empty key")
+        if values is None or len(values) == 0:
+            raise ValueError("Empty value")
+        old = self.get(key, {})
+        for k, v in values.items():
+            if k not in old:
+                old[k] = set([v])
+            else:
+                old[k] = set(old[k]) | set([v])
+        self.replace(key, old)
+
     def update(self, key: str, values: dict):
         key = key.strip()
         if key == "": raise KeyError("Empty key")
