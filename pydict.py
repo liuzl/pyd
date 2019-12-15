@@ -101,7 +101,24 @@ class Dict(object):
         return ret
 
     def multi_max_match(self, text: str):
-        raise NotImplementedError("To be implemented")
+        text = text.strip()
+        if text == "": return None
+        ret = {}
+        i, l = 0, len(text)
+        while i < l:
+            hits = self.prefix_match(text[i:])
+            if hits is None:
+                i += 1
+                continue
+            key = ""
+            for k, _ in hits.items():
+                if len(k) > len(key):
+                    key = k
+            if key not in ret:
+                ret[key] = {"value": hits[key], "hits": []}
+            ret[key]["hits"].append({"start": i, "end": i+len(key)})
+            i += len(key)
+        return ret
 
     def save(self):
         self.cedar.save(self.cedar_path)
@@ -114,4 +131,6 @@ if __name__ == "__main__":
     x = d['中国']
     print(x)
     ret = d.multi_match("中国人民是伟大的人民,中国近年来的发展有目共睹")
+    print(ret)
+    ret = d.multi_max_match("中国人民是伟大的人民,中国近年来的发展有目共睹")
     print(ret)
