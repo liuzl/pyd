@@ -41,9 +41,10 @@ class Dict(object):
             raise ValueError("Empty value")
         old = self.get(key)
         if old is None:
-            raise KeyError("Key {} not found".format(key))
-        for k, v in values.items():
-            old[k] = v
+            old = values
+        else:
+            for k, v in values.items():
+                old[k] = v
         self.replace(key, old)
 
     def replace(self, key: str, values: dict):
