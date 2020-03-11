@@ -6,4 +6,8 @@
 
 ## Install
 
+```sh
+pip install pydict-cedar
+```
+
 ## Usage
